@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +36,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 private const val TAG = "TicTacToe"
@@ -50,7 +54,7 @@ data class PlayerState(
     val index: Int,
     val rect: Rect,
     val player: Player = Player.None,
-    val animationValue: Float = 0F
+//    val animationValue: Float = 0F
 )
 
 @Composable
@@ -78,18 +82,32 @@ fun TicTacToe(modifier: Modifier = Modifier) {
     }
 
 
-    var clickedIndex by remember { mutableStateOf(-1) }
+    var clickedIndex by remember { mutableIntStateOf(-1) }
     val playerPathPortion: MutableList<Animatable<Float, AnimationVector1D>> = mutableListOf()
     repeat(9) {
-        playerPathPortion.add( remember { Animatable(0f) })
+        playerPathPortion.add(remember { Animatable(0f) })
     }
+
+    //we need a separate coroutine that updates the value of animation
+    //if we just use Launched Effect it would cancel the existing animation
+    //as user presses another button before the existing animation ends
+    val scope = rememberCoroutineScope()
+
     LaunchedEffect(key1 = clickedIndex) {
-        if(clickedIndex==-1) return@LaunchedEffect
+        if (clickedIndex == -1) return@LaunchedEffect
 
-        playerPathPortion[clickedIndex].animateTo(targetValue = 1F, animationSpec = tween(durationMillis = 1000))
+        scope.launch {
+            playerPathPortion[clickedIndex].animateTo(
+                targetValue = 1F,
+                animationSpec = tween(durationMillis = 1000)
+            )
+        }
 
-        val portion = playerPathPortion[clickedIndex].value
-        Log.e(TAG, "TicTacToe: LaunchedEffectExistingValue: $portion")
+
+
+
+//        val portion = playerPathPortion[clickedIndex].value
+//        Log.e(TAG, "TicTacToe: LaunchedEffectExistingValue: $portion")
     }
 
 
@@ -240,7 +258,6 @@ fun TicTacToe(modifier: Modifier = Modifier) {
             status.forEachIndexed { index, it ->
 //                drawRectangle(it.first, color = if (index%2==0) Color.Red else Color.Green)
                 if (it.player is Player.None) return@forEachIndexed
-                Log.i(TAG, "TicTacToe: pathPortionValue: ${it.animationValue}")
                 if (it.player is Player.Circle) {
                     drawPlayerCircle(it.rect, playerPathPortion[index].value)
                 } else drawCrossPlayer(it.rect, playerPathPortion[index].value)

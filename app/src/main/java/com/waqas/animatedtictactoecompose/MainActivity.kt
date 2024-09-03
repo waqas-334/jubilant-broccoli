@@ -23,6 +23,7 @@ class MainActivity : ComponentActivity() {
                     TicTacToe(
                         modifier = Modifier.padding(innerPadding)
                     )
+//                    PathEffectTutorial()
                 }
             }
         }

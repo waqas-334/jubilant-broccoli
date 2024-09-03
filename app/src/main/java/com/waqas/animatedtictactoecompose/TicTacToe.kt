@@ -11,12 +11,17 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,8 +46,13 @@ import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.waqas.animatedtictactoecompose.WinnerChecker.Companion.checkWinner
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
@@ -95,7 +105,6 @@ fun TicTacToe(modifier: Modifier = Modifier) {
         current = if (current == Player.Circle) Player.Cross else Player.Circle
     }
 
-
     var clickedIndex by remember { mutableIntStateOf(-1) }
     val playerPathPortion: MutableList<Animatable<Float, AnimationVector1D>> = mutableListOf()
     repeat(9) {
@@ -113,8 +122,7 @@ fun TicTacToe(modifier: Modifier = Modifier) {
 
         scope.launch {
             playerPathPortion[clickedIndex].animateTo(
-                targetValue = 1F,
-                animationSpec = tween(durationMillis = 1000)
+                targetValue = 1F, animationSpec = tween(durationMillis = 1000)
             )
         }
 
@@ -148,8 +156,7 @@ fun TicTacToe(modifier: Modifier = Modifier) {
 
     val r3c1 = Rect(0f, oneBoxSize * 2, oneBoxSize, oneBoxSize * 3)
     val r3c2 = Rect(oneBoxSize, oneBoxSize * 2, oneBoxSize * 2, oneBoxSize * 3)
-    val r3c3 =
-        Rect(oneBoxSize * 2, oneBoxSize * 2, oneBoxSize * 3, oneBoxSize * 3)
+    val r3c3 = Rect(oneBoxSize * 2, oneBoxSize * 2, oneBoxSize * 3, oneBoxSize * 3)
 
     val rectangles = listOf(r1c1, r1c2, r1c3, r2c1, r2c2, r2c3, r3c1, r3c2, r3c3)
     rectangles.forEachIndexed { index, rect ->
@@ -159,38 +166,64 @@ fun TicTacToe(modifier: Modifier = Modifier) {
     var winnerCombination by remember {
         mutableStateOf(Winner())
     }
+    var clickCounter by remember {
+        mutableIntStateOf(0)
+    }
+
+    var statusText by remember {
+        mutableStateOf("Tap to start")
+    }
+
+    fun updateStatus() {
+        statusText = if (current == Player.Cross) "Cross Next" else "Circle Next"
+    }
+
+
 
     Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
-        Canvas(
-            modifier = Modifier
-                .width(300.dp)
-                .height(300.dp)
-                .align(Alignment.CenterHorizontally)
-                .pointerInput(true) {
-                    detectTapGestures { bounds ->
-                        if (winnerCombination.combination.size >= 3) return@detectTapGestures
-                        rectangles.forEachIndexed { index, rect ->
-                            if (rect.contains(bounds)) {
-                                val currentState = status[index]
-                                if (currentState.player != Player.None) return@forEachIndexed
+        Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Text(
+                text = statusText, fontSize = 30.sp, style = TextStyle(
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            )
+        }
+        Spacer(modifier = Modifier.height(50.dp))
+        Canvas(modifier = Modifier
+            .width(300.dp)
+            .height(300.dp)
+            .align(Alignment.CenterHorizontally)
+            .pointerInput(true) {
+                detectTapGestures { bounds ->
+                    if (winnerCombination.combination.size >= 3) return@detectTapGestures  //someone won
+                    rectangles.forEachIndexed { index, rect ->
+                        if (rect.contains(bounds)) {
+                            val currentState = status[index]
+                            if (currentState.player != Player.None) return@forEachIndexed
 
-                                status[index] = currentState.copy(
-                                    player = current,
-                                )
-                                clickedIndex = index
-                                updatePlayerState()
-                                checkWinner(status)?.let {
-                                    winnerCombination = it
-//                                    winnerCombination.add(it[0])
-//                                    winnerCombination.add(it[1])
-//                                    winnerCombination.add(it[2])
-                                }
-                                return@forEachIndexed
+                            status[index] = currentState.copy(
+                                player = current,
+                            )
+
+                            clickedIndex = index
+                            updatePlayerState()
+                            checkWinner(status)?.let {
+                                winnerCombination = it
                             }
+                            clickCounter++
+                            updateStatus()
+                            return@forEachIndexed
                         }
                     }
+
+                    if (clickCounter >= 9) {
+                        statusText = "Draw"
+                        return@detectTapGestures
+                    }
                 }
-        ) {
+            }) {
 
 
             val horizontalFirstLine = Path().apply {
@@ -211,8 +244,7 @@ fun TicTacToe(modifier: Modifier = Modifier) {
                 path = firstHorizontalOutPath.asComposePath(),
                 color = Color.Black,
                 style = Stroke(
-                    width = 5.dp.toPx(),
-                    cap = StrokeCap.Round
+                    width = 5.dp.toPx(), cap = StrokeCap.Round
                 ),
             )
 
@@ -234,8 +266,7 @@ fun TicTacToe(modifier: Modifier = Modifier) {
                 path = secondHorizontalOutPath.asComposePath(),
                 color = Color.Black,
                 style = Stroke(
-                    width = 5.dp.toPx(),
-                    cap = StrokeCap.Round
+                    width = 5.dp.toPx(), cap = StrokeCap.Round
                 ),
             )
 
@@ -256,8 +287,7 @@ fun TicTacToe(modifier: Modifier = Modifier) {
                 path = firstVerticalOutPath.asComposePath(),
                 color = Color.Black,
                 style = Stroke(
-                    width = 5.dp.toPx(),
-                    cap = StrokeCap.Round
+                    width = 5.dp.toPx(), cap = StrokeCap.Round
                 ),
             )
 
@@ -279,8 +309,7 @@ fun TicTacToe(modifier: Modifier = Modifier) {
                 path = secondVerticalOutPath.asComposePath(),
                 color = Color.Black,
                 style = Stroke(
-                    width = 5.dp.toPx(),
-                    cap = StrokeCap.Round
+                    width = 5.dp.toPx(), cap = StrokeCap.Round
                 ),
             )
 
@@ -303,32 +332,28 @@ fun TicTacToe(modifier: Modifier = Modifier) {
 
             val startOffSet = when (winnerLineType) {
                 WinnerLineType.Column -> Offset(
-                    x = b1.topCenter.x,
-                    y = b1.topCenter.y + buffer
+                    x = b1.topCenter.x, y = b1.topCenter.y + buffer
                 )
 
                 WinnerLineType.Row -> Offset(
-                    x = b1.centerLeft.x + buffer,
-                    y = b1.centerLeft.y
+                    x = b1.centerLeft.x + buffer, y = b1.centerLeft.y
                 )
 
                 WinnerLineType.Diagonal -> b1.center
             }
             val endOffSet = when (winnerLineType) {
                 WinnerLineType.Column -> Offset(
-                    x = b3.bottomCenter.x,
-                    y = b3.bottomCenter.y - buffer
+                    x = b3.bottomCenter.x, y = b3.bottomCenter.y - buffer
                 )
 
                 WinnerLineType.Diagonal -> b3.center
                 WinnerLineType.Row -> Offset(
-                    x = b3.centerRight.x - buffer,
-                    y = b3.centerRight.y
+                    x = b3.centerRight.x - buffer, y = b3.centerRight.y
                 )
             }
 
             val oval = Path().apply {
-                addOval(Rect(topLeft = Offset(-20f,-20f), bottomRight = Offset(20f, 20f)))
+                addOval(Rect(topLeft = Offset(-20f, -20f), bottomRight = Offset(20f, 20f)))
             }
             drawLine(
                 color = Color.Gray,
@@ -345,6 +370,8 @@ fun TicTacToe(modifier: Modifier = Modifier) {
                 )
 
             )
+
+            statusText = if (current == Player.Cross) "Cross WON" else "Circle WON"
         }
     }
 

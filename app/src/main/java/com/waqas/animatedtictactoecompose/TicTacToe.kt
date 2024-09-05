@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.waqas.animatedtictactoecompose.WinnerChecker.Companion.checkWinner
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
@@ -89,7 +90,10 @@ fun dpToPx(dp: Dp): Float {
 }
 
 @Composable
-fun TicTacToe(modifier: Modifier = Modifier) {
+fun TicTacToe(
+    modifier: Modifier = Modifier,
+    viewModel: TicTacToeViewModel = hiltViewModel()
+) {
 
     val size = Size(width = 300f, height = 300f)
     val distanceBetweenLinesDp = (size.height / 3).dp
